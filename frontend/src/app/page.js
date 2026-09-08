@@ -320,7 +320,37 @@ export default function Home() {
           {uiLanguage === "en" ? "اردو" : "English"}
         </button>
       </nav>
+{activeView === "reviews" && (
+  <section className="application-home">
+    <div className="query-header">
+      <div>
+        <div className="eyebrow">HUMAN REVIEW</div>
+        <h1>Reviews</h1>
+        <p>Review completed LegalMind analyses.</p>
+      </div>
+    </div>
 
+    <div className="query-card">
+      <h2>Current Review</h2>
+      <p>Contract #{reasoning.contract_id ?? 1} · Clause #{reasoning.clause_id ?? 17}</p>
+      <p>Risk: {riskLevel} · Score: {riskScore}</p>
+
+      <textarea
+        className="rationale"
+        value={rationale}
+        onChange={(e) => setRationale(e.target.value)}
+        placeholder="Enter reviewer rationale..."
+        rows={4}
+      />
+
+      <div className="action-buttons">
+        <button className="approve" onClick={() => submitAction("approve")}>Approve</button>
+        <button className="edit" onClick={() => submitAction("edit")}>Edit</button>
+        <button className="reject" onClick={() => submitAction("reject")}>Reject</button>
+      </div>
+    </div>
+  </section>
+)}
       {activeView === "dashboard" && (
         <section className="application-home">
           <div className="hero-section">
