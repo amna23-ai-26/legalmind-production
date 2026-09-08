@@ -11,7 +11,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY frontend ./frontend
 COPY deployment/data /content/drive/MyDrive/legalmind/data
-COPY deployment/outputs /content/drive/MyDrive/legalmind/outputs
 
 EXPOSE 8000
 
