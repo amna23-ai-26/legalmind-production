@@ -1,0 +1,36 @@
+{
+  "evaluation_type": "Phase 4 Pakistan 3-corpus retrieval baseline",
+  "query_count": 3,
+  "results": [
+    {
+      "corpus": "contract_act_1872",
+      "gold_section": "73",
+      "gold_rank": 1,
+      "precision_at_5": 0.2,
+      "recall_at_10": 1.0,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "corpus": "companies_act_2017",
+      "gold_section": "205",
+      "gold_rank": 1,
+      "precision_at_5": 0.2,
+      "recall_at_10": 1.0,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "corpus": "companies_regulations_2024",
+      "gold_section": "152",
+      "gold_rank": 1,
+      "precision_at_5": 0.2,
+      "recall_at_10": 1.0,
+      "reciprocal_rank": 1.0
+    }
+  ],
+  "macro": {
+    "precision_at_5": 0.2,
+    "recall_at_10": 1.0,
+    "mean_reciprocal_rank": 1.0
+  },
+  "status": "baseline_only"
+}

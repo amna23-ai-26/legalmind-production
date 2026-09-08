@@ -1,0 +1,70 @@
+{
+  "version": "v2",
+  "status": "candidate_corrected",
+  "excluded_queries": [
+    {
+      "corpus": "Companies Regulations 2024",
+      "query": "corporate governance directors board requirements",
+      "reason": "Existing gold sections 76 and 79 do not directly support the query intent; no replacement gold section established."
+    }
+  ],
+  "queries": [
+    {
+      "corpus": "Contract Act 1872",
+      "query": "breach of contract compensation damages",
+      "gold_sections": [
+        "73"
+      ]
+    },
+    {
+      "corpus": "Contract Act 1872",
+      "query": "compensation for breach of contract penalty",
+      "gold_sections": [
+        "73",
+        "74"
+      ]
+    },
+    {
+      "corpus": "Contract Act 1872",
+      "query": "agreement restraint of trade exceptions",
+      "gold_sections": [
+        "27"
+      ]
+    },
+    {
+      "corpus": "Companies Act 2017",
+      "query": "director disclosure of interest conflict related party transactions",
+      "gold_sections": [
+        "205"
+      ]
+    },
+    {
+      "corpus": "Companies Act 2017",
+      "query": "appointment qualification disqualification directors",
+      "gold_sections": [
+        "153"
+      ]
+    },
+    {
+      "corpus": "Companies Act 2017",
+      "query": "annual general meeting company requirements",
+      "gold_sections": [
+        "132"
+      ]
+    },
+    {
+      "corpus": "Companies Regulations 2024",
+      "query": "related party transactions disclosure beneficial ownership",
+      "gold_sections": [
+        "152"
+      ]
+    },
+    {
+      "corpus": "Companies Regulations 2024",
+      "query": "beneficial ownership particulars disclosure",
+      "gold_sections": [
+        "152"
+      ]
+    }
+  ]
+}

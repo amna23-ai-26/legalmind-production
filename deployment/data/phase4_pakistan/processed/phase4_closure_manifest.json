@@ -1,0 +1,115 @@
+{
+  "phase": "Phase 4",
+  "project": "LegalMind",
+  "status": "COMPLETE_VALIDATED_FROZEN",
+  "closure_type": "defined_scope_closure",
+  "closure_timestamp_utc": "2026-09-02T06:43:37.750507+00:00",
+  "scope": {
+    "description": "Pakistan statutory corpus migration/repointing and validation using the existing LegalMind architecture.",
+    "corpora": [
+      {
+        "name": "Contract Act 1872",
+        "chunks": 222,
+        "embedding_dimensions": 1024,
+        "embedding_dtype": "float32",
+        "qdrant_collection": "legalmind_pakistan_contract_act_1872"
+      },
+      {
+        "name": "Companies Act 2017",
+        "chunks": 711,
+        "embedding_dimensions": 1024,
+        "embedding_dtype": "float32",
+        "qdrant_collection": "legalmind_pakistan_companies_act_2017"
+      },
+      {
+        "name": "Companies Regulations 2024",
+        "chunks": 529,
+        "embedding_dimensions": 1024,
+        "embedding_dtype": "float32",
+        "qdrant_collection": "legalmind_pakistan_companies_regulations_2024"
+      }
+    ],
+    "total_chunks": 1462
+  },
+  "validated_components": [
+    "Pakistan statutory corpus ingestion and segmentation",
+    "Hierarchical chunking",
+    "BGE-M3 embeddings",
+    "Separate Pakistan Qdrant collections",
+    "Hybrid retrieval",
+    "Retrieval baseline",
+    "Corrected gold set v2",
+    "Retrieval evaluation v2",
+    "PakistanEvidenceAdapter",
+    "Frozen LegalReasoningAgent integration",
+    "Frozen CriticAgent boundary validation",
+    "Frozen Phase 3 workflow integration",
+    "Cross-corpus Pakistan runtime validation",
+    "Phase 4 runtime validation persistence",
+    "Closure-readiness audit",
+    "Integration/state audit",
+    "Scope-boundary audit"
+  ],
+  "retrieval_metrics": {
+    "evaluation_version": "v2",
+    "status": "evaluated",
+    "included_queries": 8,
+    "excluded_queries": 1,
+    "section_level_deduplication": true,
+    "precision_at_5": 0.2,
+    "recall_at_10": 1.0,
+    "mrr": 0.8888888888888888
+  },
+  "runtime_validation": {
+    "status": "validated",
+    "step": 117,
+    "corpora_validated": 3,
+    "frozen_phase3_behavior_preserved": "PASS",
+    "no_frozen_component_modified": "PASS"
+  },
+  "research_boundary": {
+    "existing_external_provider": "CourtListener",
+    "pakistan_case_law_provider_configured": false,
+    "frozen_research_agent_modified": false,
+    "frozen_courtlistener_client_modified": false,
+    "decision": "do_not_force_pakistan_case_law_through_existing_courtlistener_path"
+  },
+  "explicit_unresolved_scope": [
+    "Pakistan case-law provider is not configured.",
+    "Existing CourtListener case-law path is not repurposed for Pakistan.",
+    "No separate Phase 4 Supervisor implementation was identified.",
+    "No additional Phase 4 deliverables are claimed without an authoritative requirement."
+  ],
+  "authoritative_requirement_boundary": {
+    "authoritative_phase4_plan_found": false,
+    "authoritative_phase4_checklist_found": false,
+    "do_not_invent_additional_phase4_deliverables": true
+  },
+  "frozen_constraints": {
+    "phase1_frozen": true,
+    "phase2_frozen": true,
+    "phase3_frozen": true,
+    "do_not_modify_frozen_components": true,
+    "do_not_repurpose_courtlistener": true,
+    "frozen_qdrant_collection_legalmind_chunks_untouched": true
+  },
+  "new_phase4_integration_files": [
+    "app/research/pakistan_evidence_adapter.py",
+    "app/workflow/phase4_pakistan_runtime.py"
+  ],
+  "authoritative_artifacts": {
+    "research_boundary": "data/phase4_pakistan/processed/phase4_research_boundary_status.json",
+    "retrieval_baseline": "data/phase4_pakistan/processed/phase4_retrieval_baseline.json",
+    "gold_set_v2": "data/phase4_pakistan/processed/phase4_gold_set_v2.json",
+    "retrieval_evaluation_v2": "data/phase4_pakistan/processed/phase4_retrieval_evaluation_v2.json",
+    "runtime_validation": "data/phase4_pakistan/processed/phase4_runtime_validation.json",
+    "scope_boundary": "data/phase4_pakistan/processed/phase4_scope_boundary_status.json"
+  },
+  "closure_decision": {
+    "defined_phase4_scope": "CLOSED",
+    "validation": "PASSED",
+    "freeze": "APPROVED",
+    "pakistan_case_law_integration": "UNRESOLVED_OUTSIDE_CLOSED_SCOPE",
+    "additional_requirements": "PENDING_AUTHORITATIVE_REQUIREMENT"
+  }
+}

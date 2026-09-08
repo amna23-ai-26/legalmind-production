@@ -1,0 +1,63 @@
+{
+  "phase": "Phase 4",
+  "step": 117,
+  "status": "validated",
+  "runtime": "PakistanPhase4Runtime",
+  "corpora": [
+    {
+      "corpus": "Contract Act 1872",
+      "corpus_name": "contract_act_1872",
+      "clause_id": 73,
+      "status": "SUPERVISOR_ESCALATION",
+      "paused": false,
+      "hitl_required": false,
+      "cycles": 3,
+      "max_cycles": 3,
+      "reasoning_status": "draft",
+      "critic_status": "FAIL",
+      "critic_passed": false,
+      "critic_issues": 1
+    },
+    {
+      "corpus": "Companies Act 2017",
+      "corpus_name": "companies_act_2017",
+      "clause_id": 205,
+      "status": "SUPERVISOR_ESCALATION",
+      "paused": false,
+      "hitl_required": false,
+      "cycles": 3,
+      "max_cycles": 3,
+      "reasoning_status": "draft",
+      "critic_status": "FAIL",
+      "critic_passed": false,
+      "critic_issues": 1
+    },
+    {
+      "corpus": "Companies Regulations 2024",
+      "corpus_name": "companies_regulations_2024",
+      "clause_id": 152,
+      "status": "SUPERVISOR_ESCALATION",
+      "paused": false,
+      "hitl_required": false,
+      "cycles": 3,
+      "max_cycles": 3,
+      "reasoning_status": "draft",
+      "critic_status": "FAIL",
+      "critic_passed": false,
+      "critic_issues": 1
+    }
+  ],
+  "validation": {
+    "pakistan_runtime_swappability": "PASS",
+    "contract_act_runtime": "PASS",
+    "companies_act_runtime": "PASS",
+    "companies_regulations_runtime": "PASS",
+    "frozen_phase3_behavior_preserved": "PASS",
+    "no_frozen_component_modified": "PASS"
+  },
+  "notes": [
+    "Supervisor escalation is expected because the frozen CriticAgent requires external case-law evidence.",
+    "Pakistan statutory evidence reached the frozen Phase 3 workflow successfully.",
+    "No Phase 1, Phase 2, or Phase 3 component was modified."
+  ]
+}

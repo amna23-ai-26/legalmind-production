@@ -1,0 +1,22 @@
+{
+  "phase": "Phase 4",
+  "pakistan_statutory_corpora": [
+    "Contract Act 1872",
+    "Companies Act 2017",
+    "Companies Regulations 2024"
+  ],
+  "statutory_pipeline": {
+    "qdrant": "validated",
+    "hybrid_retrieval": "validated",
+    "pakistan_evidence_adapter": "validated",
+    "legal_reasoning_agent": "validated",
+    "critic_fail_safe": "validated"
+  },
+  "external_case_law": {
+    "existing_provider": "CourtListener",
+    "pakistan_provider_configured": false,
+    "frozen_research_agent_modified": false,
+    "frozen_courtlistener_client_modified": false,
+    "decision": "do_not_force_pakistan_case_law_through_existing_courtlistener_path"
+  }
+}

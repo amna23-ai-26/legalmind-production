@@ -1,0 +1,37 @@
+[
+  {
+    "audit_id": 1,
+    "timestamp": 1788336133.777034,
+    "event": "STEP_159_REVIEW",
+    "actor": "phase4_validation",
+    "metadata": {
+      "purpose": "security_validation"
+    },
+    "previous_hash": "GENESIS",
+    "record_hash": "4d8f75b0f0cf30c331c7ec3e9a11f49786ce288de491dd4aaf333be24fae7a4a"
+  },
+  {
+    "audit_id": 2,
+    "timestamp": 1788336133.7856812,
+    "event": "STEP_159_EXPORT",
+    "actor": "phase4_validation",
+    "metadata": {
+      "format": "validation"
+    },
+    "previous_hash": "4d8f75b0f0cf30c331c7ec3e9a11f49786ce288de491dd4aaf333be24fae7a4a",
+    "record_hash": "8108314a35adcaf115e91e7d962e41c466624dd01dda4d2fdd54f7c3e1fa1937"
+  },
+  {
+    "audit_id": 3,
+    "timestamp": 1788336133.7934062,
+    "event": "STEP_159_BOUNDARY_TEST",
+    "actor": "phase4_validation",
+    "metadata": {
+      "role": "reviewer",
+      "permission": "review",
+      "result": "authorized"
+    },
+    "previous_hash": "8108314a35adcaf115e91e7d962e41c466624dd01dda4d2fdd54f7c3e1fa1937",
+    "record_hash": "8d1d336c6e6d5680402b92c4b54a592a980efb31e8f70f84f39f5fc9c80b8d2d"
+  }
+]

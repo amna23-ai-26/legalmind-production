@@ -1,0 +1,66 @@
+{
+  "phase": "Phase 4",
+  "artifact": "evaluation_metric_status",
+  "updated_at": "2026-09-02T07:55:28.615532+00:00",
+  "metrics": {
+    "clause_extraction_f1": {
+      "status": "NOT_COMPUTABLE_FROM_FROZEN_ARTIFACT",
+      "reason": "Frozen CUAD segmentation artifacts do not preserve source-span provenance required for defensible clause-level gold alignment."
+    },
+    "retrieval_precision_at_5": {
+      "status": "VALIDATED",
+      "value": 0.2,
+      "artifact": "phase4_retrieval_evaluation_v2.json"
+    },
+    "retrieval_recall_at_10": {
+      "status": "VALIDATED",
+      "value": 1.0,
+      "artifact": "phase4_retrieval_evaluation_v2.json"
+    },
+    "cohen_kappa": {
+      "status": "NOT_COMPUTABLE",
+      "reason": "No authoritative independent human legal-review risk labels for the required evaluation set were found."
+    },
+    "hallucination_catch_rate": {
+      "status": "VALIDATED_CONTROLLED_TEST",
+      "value": 1.0,
+      "injected_false_citations": 5,
+      "detected_false_citations": 5,
+      "supported_citations": 5,
+      "supported_citations_accepted": 5,
+      "artifact": "Step 150 controlled test",
+      "scope": "Closed-world synthetic false-citation injection test against the frozen CriticAgent."
+    },
+    "brier_score": {
+      "status": "NOT_COMPUTABLE",
+      "reason": "Confidence scores exist, but no independent ground-truth correctness outcomes are paired with those scores."
+    }
+  },
+  "observability": {
+    "status": "WIRED_VALIDATED",
+    "langsmith_cloud_tracing": "NOT_CONFIGURED",
+    "artifact": "app/observability/phase4_langsmith.py",
+    "runtime_validation": "STEP_147K_PASS"
+  },
+  "integrity": {
+    "frozen_phase1_3_modified": false,
+    "security_boundary_validated": true
+  },
+  "security_privacy": {
+    "redaction": "VALIDATED",
+    "retention": "VALIDATED",
+    "rbac": "VALIDATED",
+    "immutable_audit": "VALIDATED_PERSISTENT",
+    "encryption_at_rest": "INFRASTRUCTURE_DEPENDENT",
+    "encryption_in_transit": "REQUIRED",
+    "execution_boundary": "FUNCTIONALLY_VALIDATED",
+    "overall_status": "PARTIAL_SECURITY_HARDENING",
+    "remaining": [
+      "integrate security boundary with Phase 4 execution/API boundary",
+      "persistent production encryption-at-rest control",
+      "production encryption-in-transit control"
+    ]
+  },
+  "step": 157,
+  "status": "PASS"
+}
