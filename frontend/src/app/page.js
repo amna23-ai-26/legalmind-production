@@ -30,7 +30,7 @@ function getLevel(result) {
 export default function Home() {
   const [result, setResult] = useState(null);
   const [audit, setAudit] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [action, setAction] = useState("Pending");
   const [rationale, setRationale] = useState("");
