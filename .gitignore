@@ -46,3 +46,7 @@ submission/
 # OS
 .DS_Store
 Thumbs.db
+
+/data/
+
+frontend/*.log
