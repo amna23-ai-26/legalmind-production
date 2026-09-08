@@ -1,0 +1,1 @@
+"""LegalMind hybrid retrieval package."""

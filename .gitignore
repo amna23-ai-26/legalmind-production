@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+npm-debug.log*
+
+# Large models
+*.bin
+*.safetensors
+*.pt
+*.pth
+
+# Runtime/storage
+qdrant_storage/
+neo4j/
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated/runtime data
+data/processed/
+data/phase4_pakistan/processed/
+data/phase4_pakistan/raw/
+data/phase4_pakistan/backup/
+
+# Uploads and generated artifacts
+data/processed/uploads/
+outputs/
+submission/
+
+# Python caches
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
