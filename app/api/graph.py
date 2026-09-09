@@ -14,10 +14,16 @@ router = APIRouter(
 def get_graph_service():
     """
     Create a Neo4j database connection and graph query service.
+    Raises HTTP 503 if NEO4J_PASSWORD is not configured.
     """
-    db = Neo4jDatabase()
+    try:
+        db = Neo4jDatabase()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Knowledge graph not configured: {exc}"
+        )
     graph = LegalMindGraphService(db)
-
     return db, graph
 
 
