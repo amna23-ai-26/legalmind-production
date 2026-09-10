@@ -12,9 +12,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# FIXED CORS CONFIGURATION FOR VERCEL
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Matches all Vercel dynamic deployment URLs
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,12 +35,14 @@ def load_router(name, import_fn):
         router = import_fn()
         app.include_router(router)
         router_status[name] = "LOADED"
+        logger.info(f"Successfully loaded {name} router")
     except Exception as exc:
         err_msg = f"ERROR: {exc}\n{traceback.format_exc()}"
         router_status[name] = err_msg
         logger.error(f"Failed to load {name} router: {err_msg}")
 
 
+# Dynamic sub-router imports
 load_router("upload", lambda: __import__("app.api.upload", fromlist=["router"]).router)
 load_router("process", lambda: __import__("app.api.process", fromlist=["router"]).router)
 load_router("review", lambda: __import__("app.api.review", fromlist=["router"]).router)
@@ -54,8 +63,9 @@ def root():
 
 @app.get("/health")
 def health():
+    has_errors = any("ERROR" in str(val) for val in router_status.values())
     return {
-        "status": "healthy",
+        "status": "degraded" if has_errors else "healthy",
         "routers": router_status
     }
 
