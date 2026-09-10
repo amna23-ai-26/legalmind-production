@@ -97,10 +97,64 @@ def is_clear_text_heading(line: str) -> bool:
     return True
 
 
+def is_numbered_text_heading(line: str) -> bool:
+    """
+    Recognize the most common real-world contract heading format:
+    a legal section number followed by the heading text on the same
+    line, e.g.:
+        1. Confidentiality Obligations.
+        2.1 Termination Rights
+
+    Previously neither heading detector matched this: is_numbered_heading
+    only accepts a bare number with nothing else on the line, and
+    is_clear_text_heading requires the line to start with a letter (it
+    rejects any line starting with a digit). That gap meant a document
+    whose clause numbers and titles share a line - the standard format -
+    produced zero detected headings and therefore zero segmented
+    clauses, silently falling through to the "no clauses found"
+    fallback regardless of how well-formatted the document was.
+    """
+
+    line = line.strip()
+
+    match = re.match(r"^\d+(?:\.\d+)*\.?\s+(.+)$", line)
+
+    if not match:
+        return False
+
+    remainder = match.group(1).strip()
+
+    if not remainder:
+        return False
+
+    # Apply the same "looks like a heading, not a sentence" checks as
+    # is_clear_text_heading to the text after the number, minus the
+    # trailing-period requirement (numbered headings often omit it).
+    if len(remainder) > 70:
+        return False
+
+    words = remainder.rstrip(".").split()
+
+    if len(words) > 7:
+        return False
+
+    if not re.match(r"^[A-Z]", remainder):
+        return False
+
+    if '"' in remainder or "“" in remainder or "”" in remainder:
+        return False
+
+    if remainder.count(",") > 1:
+        return False
+
+    return True
+
+
 def is_heading(line: str) -> bool:
 
     return (
         is_numbered_heading(line)
+        or is_numbered_text_heading(line)
         or is_clear_text_heading(line)
     )
 

@@ -129,25 +129,58 @@ def legal_query(request: LegalQueryRequest):
 
     top_evidence = evidence[:10]
 
-    # Provide statutory fallback context if corpus vector/json files are missing on Railway
     if not top_evidence:
-        top_evidence = [
-            {
-                "source": "PakistanStatute",
-                "corpus": "contract_act_1872",
-                "title": "Contract Act, 1872",
-                "jurisdiction": "Pakistan",
-                "section_id": "73",
-                "heading": "Section 73 - Compensation for loss or damage caused by breach of contract",
-                "text": "When a contract has been broken, the party who suffers by such breach is entitled to receive, from the party who has broken the contract, compensation for any loss or damage caused to him thereby, which naturally arose in the usual course of things from such breach.",
-                "retrieval_score": 0.95,
-                "source_id": "contract_act_1872_sec73"
-            }
-        ]
+        # Previously this silently swapped in a hardcoded Contract Act
+        # Section 73 snippet for *every* query that found no evidence,
+        # which is why every question produced the exact same answer.
+        # That almost always meant no corpus was loaded at all (the
+        # data/phase4_pakistan/processed directory is gitignored and not
+        # shipped with the app), not that Section 73 was actually
+        # relevant to the question. Say so honestly instead of
+        # fabricating a match.
+        active_retrievers = build_retrievers()
+        if not active_retrievers:
+            logger.warning(
+                "No legal corpora are loaded (checked contract_act_1872, "
+                "companies_act_2017, companies_regulations_2024 under "
+                "%s). /api/legal-query cannot answer any query until "
+                "processed chunk/embedding files are present.",
+                get_data_dir() / "phase4_pakistan" / "processed",
+            )
+            answer_text = (
+                "LegalMind could not answer this question because no Pakistani "
+                "statutory corpus is currently loaded on the server. "
+                "This is a server configuration issue, not a problem with your question — "
+                "please contact an administrator to load the legal corpus data."
+            )
+        else:
+            answer_text = (
+                f'LegalMind searched the loaded Pakistani statutes for "{query}" '
+                "and found no matching provisions. Try rephrasing your question, "
+                "or note that it may fall outside the currently supported corpora "
+                "(Contract Act 1872, Companies Act 2017, Companies Regulations 2024)."
+            )
 
+        return {
+            "status": "COMPLETED",
+            "query": query,
+            "language": request.language,
+            "answer": answer_text,
+            "evidence": [],
+            "evidence_count": 0,
+            "case_law": {
+                "status": "NOT_CONFIGURED",
+                "message": "Pakistani case-law provider is not configured.",
+            },
+            "disclaimer": "LegalMind provides AI-assisted legal intelligence and research support. It does not provide legal advice.",
+        }
+
+    top_match = top_evidence[0]
+    section_ref = f" Section {top_match['section_id']}" if top_match.get("section_id") else ""
     answer_text = (
-        "LegalMind retrieved the most relevant Pakistani statutory provisions below based on your query. "
-        "Review the statutory sections for authoritative legal context."
+        f'LegalMind found {len(top_evidence)} statutory provision(s) relevant to "{query}". '
+        f"The closest match is {top_match['title']}{section_ref} "
+        f'("{top_match["heading"]}"). Review the statutory sections below for full context.'
     )
 
     return {
