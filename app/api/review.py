@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
 import json
 from pathlib import Path
 from typing import Optional
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.workflow.phase3_workflow import Phase3Workflow
@@ -14,7 +14,6 @@ router = APIRouter(
     prefix="/api/review",
     tags=["Phase 3 Review"]
 )
-
 
 reviewer_actions = ReviewerActions()
 hitl_reviewer = HITLReviewer(
@@ -67,13 +66,24 @@ DEFAULT_INITIAL_REVIEW = {
 
 last_workflow_result = None
 
-runtime_path = get_runtime_result_path()
-if runtime_path.exists():
+
+def load_persistent_result():
+    """Helper to safely read latest_result.json from disk."""
+    global last_workflow_result
     try:
-        with open(runtime_path, "r", encoding="utf-8") as f:
-            last_workflow_result = json.load(f)
+        # FIX 1: Pass 'latest_result.json' to return a File Path, not a Directory Path
+        runtime_file = get_runtime_result_path("latest_result.json")
+        if runtime_file.is_file():
+            with open(runtime_file, "r", encoding="utf-8") as f:
+                last_workflow_result = json.load(f)
+                return last_workflow_result
     except Exception:
-        last_workflow_result = None
+        pass
+    return None
+
+
+# Load saved result on server start
+load_persistent_result()
 
 
 class ReviewerActionRequest(BaseModel):
@@ -94,6 +104,9 @@ def set_last_workflow_result(result):
 
 @router.get("/status")
 def review_status():
+    if last_workflow_result is None:
+        load_persistent_result()
+
     return {
         "status": "ready",
         "workflow_initialized": workflow is not None,
@@ -103,6 +116,10 @@ def review_status():
 
 @router.get("/current")
 def current_review():
+    # FIX 2: Check disk dynamically if in-memory variable is empty
+    if last_workflow_result is None:
+        load_persistent_result()
+
     if last_workflow_result is None:
         return DEFAULT_INITIAL_REVIEW
 
@@ -111,6 +128,9 @@ def current_review():
 
 @router.post("/approve")
 def approve_review(request: ReviewerActionRequest):
+    if last_workflow_result is None:
+        load_persistent_result()
+
     if last_workflow_result is None:
         raise HTTPException(
             status_code=404,
@@ -136,6 +156,9 @@ def approve_review(request: ReviewerActionRequest):
 @router.post("/reject")
 def reject_review(request: ReviewerActionRequest):
     if last_workflow_result is None:
+        load_persistent_result()
+
+    if last_workflow_result is None:
         raise HTTPException(
             status_code=404,
             detail="No workflow result is available."
@@ -159,6 +182,9 @@ def reject_review(request: ReviewerActionRequest):
 
 @router.post("/edit")
 def edit_review(request: ReviewerActionRequest):
+    if last_workflow_result is None:
+        load_persistent_result()
+
     if last_workflow_result is None:
         raise HTTPException(
             status_code=404,
