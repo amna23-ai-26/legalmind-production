@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 
 const FALLBACK_EVIDENCE = [
   { title: "Comet Technologies USA, Inc. v. Xp Power, LLC", jurisdiction: "9th Cir." },
@@ -44,7 +44,8 @@ export default function Home() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
 
-  // Wrap loadReview in useCallback with cache-busting headers and parameters
+  const fileInputRef = useRef(null);
+
   const loadReview = useCallback(async () => {
     try {
       setLoading(true);
@@ -80,7 +81,6 @@ export default function Home() {
     }
   }, []);
 
-  // Fetch review state immediately on mount and across all key views including 'dashboard'
   useEffect(() => {
     if (
       activeView === "dashboard" ||
@@ -133,6 +133,7 @@ export default function Home() {
 
       setProcessingMessage("Analysis completed.");
       setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       await loadReview();
     } catch (err) {
       setError(err.message);
@@ -217,7 +218,7 @@ export default function Home() {
   const critic = result?.reasoning_critic?.critic_result || {};
   const explainability = result?.explainability || {};
   const confidence = explainability.confidence?.score ?? 0;
-  
+
   const evidence = reasoning.supporting_evidence?.case_law || FALLBACK_EVIDENCE;
 
   const riskCounts = useMemo(() => {
@@ -622,6 +623,7 @@ export default function Home() {
 
             <div className="document-upload-controls">
               <input
+                ref={fileInputRef}
                 type="file"
                 accept=".pdf,.docx,.jpg,.jpeg,.png"
                 disabled={processing}
@@ -866,9 +868,10 @@ export default function Home() {
                   {result?.hitl?.reason || "Workflow is within the configured review threshold."}
                 </p>
 
-                <label className="rationale-label">Reviewer rationale</label>
+                <label className="rationale-label" htmlFor="decision-rationale">Reviewer rationale</label>
 
                 <textarea
+                  id="decision-rationale"
                   className="rationale"
                   value={rationale}
                   onChange={(event) => setRationale(event.target.value)}
