@@ -33,17 +33,17 @@ app.add_middleware(
 router_status = {}
 
 
+
 def load_router(name, import_fn):
     try:
         router = import_fn()
-        app.include_router(router)
+        app.include_router(router, prefix="/api")  # <-- ADDED prefix="/api"
         router_status[name] = "LOADED"
         logger.info(f"Successfully loaded {name} router")
     except Exception as exc:
         err_msg = f"ERROR: {exc}\n{traceback.format_exc()}"
         router_status[name] = err_msg
         logger.error(f"Failed to load {name} router: {err_msg}")
-
 
 # Dynamic sub-router imports
 load_router("upload", lambda: __import__("app.api.upload", fromlist=["router"]).router)
