@@ -11,7 +11,7 @@ from app.workflow.reviewer_actions import ReviewerActions
 from app.config import get_runtime_result_path
 
 router = APIRouter(
-    prefix="/api/review",
+    prefix="/review",
     tags=["Phase 3 Review"]
 )
 
@@ -71,7 +71,6 @@ def load_persistent_result():
     """Helper to safely read latest_result.json from disk."""
     global last_workflow_result
     try:
-        # FIX 1: Pass 'latest_result.json' to return a File Path, not a Directory Path
         runtime_file = get_runtime_result_path("latest_result.json")
         if runtime_file.is_file():
             with open(runtime_file, "r", encoding="utf-8") as f:
@@ -82,7 +81,6 @@ def load_persistent_result():
     return None
 
 
-# Load saved result on server start
 load_persistent_result()
 
 
@@ -116,7 +114,6 @@ def review_status():
 
 @router.get("/current")
 def current_review():
-    # FIX 2: Check disk dynamically if in-memory variable is empty
     if last_workflow_result is None:
         load_persistent_result()
 
