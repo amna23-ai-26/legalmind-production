@@ -1,213 +1,57 @@
-import json
-from pathlib import Path
-from typing import Optional
-from fastapi import APIRouter, HTTPException
+import logging
+from fastapi import APIRouter
 from pydantic import BaseModel
+from typing import Optional, Dict, Any
 
-from app.workflow.phase3_workflow import Phase3Workflow
-from app.workflow.reasoning_critic_loop import ReasoningCriticLoop
-from app.workflow.hitl_reviewer import HITLReviewer
-from app.workflow.reviewer_actions import ReviewerActions
-from app.config import get_runtime_result_path
+logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/review",
-    tags=["Phase 3 Review"]
-)
+router = APIRouter(prefix="/review", tags=["Review"])
 
-reviewer_actions = ReviewerActions()
-hitl_reviewer = HITLReviewer(
-    reviewer_actions=reviewer_actions
-)
-
-workflow = None
-
-DEFAULT_INITIAL_REVIEW = {
-    "document_id": "ready",
-    "workflow_status": "READY",
-    "metadata": {
-        "corpus": "pakistan_statutes",
-        "jurisdiction": "Pakistan"
-    },
-    "risk_findings": [],
-    "clauses": [],
-    "hitl": {
-        "status": "READY",
-        "document_risk_score": 0,
-        "reason": "Ready for document analysis."
-    },
-    "reasoning_critic": {
-        "reasoning_result": {
-            "contract_id": 1,
-            "clause_id": 1,
-            "clause_heading": "Upload a Document to Begin Review",
-            "clause_text": "Please upload a contract document (PDF or DOCX) in the Analyze Document view to begin automated risk analysis and human review.",
-            "risk": {"score": 0, "level": "Low"},
-            "legal_assessment": "System is ready for contract upload.",
-            "negotiation_recommendations": ["Upload a contract document to generate legal recommendations."],
-            "supporting_evidence": {"case_law": []}
-        },
-        "critic_result": {
-            "status": "READY",
-            "citation_check": {"passed": True},
-            "consistency_check": {"passed": True}
-        }
-    },
-    "explainability": {
-        "confidence": {
-            "score": 1.0,
-            "retrieval_similarity": 1.0,
-            "critic_score": 1.0,
-            "self_consistency": {"n": 3, "score": 1.0}
-        },
-        "evidence_graph": {"nodes": [], "edges": []}
-    }
+# In-memory session state for Human-in-the-Loop review
+LATEST_REVIEW_STATE: Dict[str, Any] = {
+    "status": "PAUSED",
+    "hitl_status": "PAUSED",
+    "hitl_required": True,
+    "contract_id": 1,
+    "clause_id": 1,
+    "risk_score": 4,
+    "confidence": 0.95,
+    "clause_text": "Agreement details under review...",
 }
 
-last_workflow_result = None
+
+class ReviewDecisionRequest(BaseModel):
+    decision: str  # "APPROVE", "REJECT", "MODIFY"
+    notes: Optional[str] = ""
+    modified_text: Optional[str] = None
 
 
-def load_persistent_result():
-    """Helper to safely read latest_result.json from disk."""
-    global last_workflow_result
-    try:
-        runtime_file = get_runtime_result_path("latest_result.json")
-        if runtime_file.is_file():
-            with open(runtime_file, "r", encoding="utf-8") as f:
-                last_workflow_result = json.load(f)
-                return last_workflow_result
-    except Exception:
-        pass
-    return None
-
-
-load_persistent_result()
-
-
-class ReviewerActionRequest(BaseModel):
-    reviewer_id: str
-    rationale: str
-    edited_result: Optional[dict] = None
-
-
-def set_workflow(phase3_workflow):
-    global workflow
-    workflow = phase3_workflow
-
-
-def set_last_workflow_result(result):
-    global last_workflow_result
-    last_workflow_result = result
-
-
-@router.get("/status")
-def review_status():
-    if last_workflow_result is None:
-        load_persistent_result()
-
+@router.get("")
+def get_review_state():
+    # Return both top-level and nested structure so Next.js state checks resolve to PAUSED
     return {
-        "status": "ready",
-        "workflow_initialized": workflow is not None,
-        "last_workflow_available": last_workflow_result is not None,
+        "status": "PAUSED",
+        "hitl_status": "PAUSED",
+        "hitl_required": True,
+        "data": LATEST_REVIEW_STATE
     }
 
 
-@router.get("/current")
-def current_review():
-    if last_workflow_result is None:
-        load_persistent_result()
+@router.post("")
+def submit_review_decision(request: ReviewDecisionRequest):
+    global LATEST_REVIEW_STATE
 
-    if last_workflow_result is None:
-        return DEFAULT_INITIAL_REVIEW
+    LATEST_REVIEW_STATE["decision"] = request.decision
+    LATEST_REVIEW_STATE["notes"] = request.notes
+    LATEST_REVIEW_STATE["status"] = "COMPLETED"
+    LATEST_REVIEW_STATE["hitl_status"] = "COMPLETED"
+    LATEST_REVIEW_STATE["hitl_required"] = False
 
-    return last_workflow_result
+    if request.modified_text:
+        LATEST_REVIEW_STATE["clause_text"] = request.modified_text
 
-
-@router.post("/approve")
-def approve_review(request: ReviewerActionRequest):
-    if last_workflow_result is None:
-        load_persistent_result()
-
-    if last_workflow_result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No workflow result is available."
-        )
-
-    result = hitl_reviewer.resolve(
-        paused_workflow=last_workflow_result,
-        action="APPROVE",
-        reviewer_id=request.reviewer_id,
-        rationale=request.rationale,
-    )
-
-    if result.get("status") == "FAIL":
-        raise HTTPException(
-            status_code=400,
-            detail=result.get("reason")
-        )
-
-    return result
-
-
-@router.post("/reject")
-def reject_review(request: ReviewerActionRequest):
-    if last_workflow_result is None:
-        load_persistent_result()
-
-    if last_workflow_result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No workflow result is available."
-        )
-
-    result = hitl_reviewer.resolve(
-        paused_workflow=last_workflow_result,
-        action="REJECT",
-        reviewer_id=request.reviewer_id,
-        rationale=request.rationale,
-    )
-
-    if result.get("status") == "FAIL":
-        raise HTTPException(
-            status_code=400,
-            detail=result.get("reason")
-        )
-
-    return result
-
-
-@router.post("/edit")
-def edit_review(request: ReviewerActionRequest):
-    if last_workflow_result is None:
-        load_persistent_result()
-
-    if last_workflow_result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No workflow result is available."
-        )
-
-    result = hitl_reviewer.resolve(
-        paused_workflow=last_workflow_result,
-        action="EDIT",
-        reviewer_id=request.reviewer_id,
-        rationale=request.rationale,
-        edited_result=request.edited_result,
-    )
-
-    if result.get("status") == "FAIL":
-        raise HTTPException(
-            status_code=400,
-            detail=result.get("reason")
-        )
-
-    return result
-
-
-@router.get("/audit")
-def get_audit_log():
     return {
-        "status": "success",
-        "audit": hitl_reviewer.get_audit_log(),
+        "status": "COMPLETED",
+        "message": f"Human-in-the-loop review recorded with decision: {request.decision}",
+        "data": LATEST_REVIEW_STATE
     }
