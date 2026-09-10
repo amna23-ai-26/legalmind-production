@@ -2,13 +2,10 @@ fastapi
 uvicorn[standard]
 python-multipart
 pydantic
-qdrant-client
-sentence-transformers
 python-docx
 pymupdf
 python-dotenv
 Pillow
-neo4j
 numpy
 pytesseract
 rank-bm25
