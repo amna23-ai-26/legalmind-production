@@ -1,4 +1,5 @@
 import json
+import urllib.parse
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -23,10 +24,24 @@ class ProcessRequest(BaseModel):
 @router.post("")
 def process_document(request: ProcessRequest):
     upload_dir = get_upload_dir()
-    file_path = upload_dir / Path(request.filename).name
+    
+    # FIX 1: Decode URL encoded strings (%20 -> spaces) to match actual filesystem paths
+    clean_filename = urllib.parse.unquote(request.filename)
+    raw_filename = Path(request.filename).name
+    decoded_filename = Path(clean_filename).name
 
+    file_path = upload_dir / decoded_filename
+
+    # Fallback check if file was saved with raw encoded filename
     if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"Uploaded document not found: {request.filename}")
+        fallback_path = upload_dir / raw_filename
+        if fallback_path.exists():
+            file_path = fallback_path
+        else:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Uploaded document not found: {request.filename}"
+            )
 
     try:
         document_result = document_agent.process(
@@ -93,7 +108,11 @@ def process_document(request: ProcessRequest):
             "available": True,
             "nodes": [
                 {"id": "doc:1", "type": "Document", "label": file_path.name},
-                {"id": f"clause:{target_clause.get('clause_id', 1)}", "type": "Clause", "label": target_clause.get("heading") or f"Clause {target_clause.get('clause_id', 1)}"},
+                {
+                    "id": f"clause:{target_clause.get('clause_id', 1)}", 
+                    "type": "Clause", 
+                    "label": target_clause.get("heading") or f"Clause {target_clause.get('clause_id', 1)}"
+                },
             ],
             "edges": [
                 {"source": "doc:1", "target": f"clause:{target_clause.get('clause_id', 1)}", "type": "HAS_CLAUSE"},
@@ -130,10 +149,11 @@ def process_document(request: ProcessRequest):
 
     set_last_workflow_result(full_workflow_result)
 
+    # FIX 2: Ensure get_runtime_result_path receives a filename parameter so it opens a File, not a Directory
     try:
-        runtime_path = get_runtime_result_path()
-        runtime_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(runtime_path, "w", encoding="utf-8") as f:
+        runtime_file = get_runtime_result_path("latest_result.json")
+        runtime_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(runtime_file, "w", encoding="utf-8") as f:
             json.dump(full_workflow_result, f, indent=2)
     except Exception:
         pass
