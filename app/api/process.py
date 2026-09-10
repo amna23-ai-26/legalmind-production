@@ -10,7 +10,7 @@ from app.agents.risk_agent import analyze_risks
 from app.agents.reasoning.legal_reasoning_agent import LegalReasoningAgent
 from app.api.review import set_last_workflow_result
 
-router = APIRouter(prefix="/api/process", tags=["Application Processing"])
+router = APIRouter(prefix="/process", tags=["Application Processing"])
 
 document_agent = DocumentAgent()
 reasoning_agent = LegalReasoningAgent()
