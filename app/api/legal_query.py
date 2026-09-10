@@ -3,8 +3,10 @@ from functools import lru_cache
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from qdrant_client import QdrantClient
-
+try:
+    from qdrant_client import QdrantClient
+except ImportError:
+    QdrantClient = None
 from app.embeddings.embedder import BGEEmbedder
 from app.retrieval.hybrid_retriever import HybridRetriever
 
