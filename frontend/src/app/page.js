@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
-const fallbackEvidence = [
-  ["Comet Technologies USA, Inc. v. Xp Power, LLC", "9th Cir."],
-  ["Zia Chishti v. Tatiana Spottiswoode", "D.C. Cir."],
-  ["NetChoice, LLC v. David Yost", "6th Cir."],
-  ["Insulet Corp. v. Eoflow, Co. Ltd.", "Fed. Cir."],
-  ["Rel. Ins., Inc. v. Pilot Risk Mgmt. Consulting, LLC", "N.C."]
+const FALLBACK_EVIDENCE = [
+  { title: "Comet Technologies USA, Inc. v. Xp Power, LLC", jurisdiction: "9th Cir." },
+  { title: "Zia Chishti v. Tatiana Spottiswoode", jurisdiction: "D.C. Cir." },
+  { title: "NetChoice, LLC v. David Yost", jurisdiction: "6th Cir." },
+  { title: "Insulet Corp. v. Eoflow, Co. Ltd.", jurisdiction: "Fed. Cir." },
+  { title: "Rel. Ins., Inc. v. Pilot Risk Mgmt. Consulting, LLC", jurisdiction: "N.C." }
 ];
 
 function getRisk(result) {
@@ -44,7 +44,8 @@ export default function Home() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
 
-  async function loadReview() {
+  // Wrap loadReview in useCallback so it can safely be added to the useEffect dependency array
+  const loadReview = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -68,13 +69,13 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     if (activeView === "analyze") {
       loadReview();
     }
-  }, [activeView]);
+  }, [activeView, loadReview]);
 
   async function processSelectedFile() {
     if (!selectedFile) return;
@@ -201,9 +202,8 @@ export default function Home() {
   const critic = result?.reasoning_critic?.critic_result || {};
   const explainability = result?.explainability || {};
   const confidence = explainability.confidence?.score ?? 0;
-  const evidence = reasoning.supporting_evidence?.case_law || fallbackEvidence.map(
-    ([title, jurisdiction]) => ({ title, jurisdiction })
-  );
+  
+  const evidence = reasoning.supporting_evidence?.case_law || FALLBACK_EVIDENCE;
 
   const riskCounts = useMemo(() => {
     const levels = {
@@ -269,47 +269,15 @@ export default function Home() {
         </div>
 
         <div className="app-nav-links">
-          <button
-            className={activeView === "dashboard" ? "app-nav-link active" : "app-nav-link"}
-            onClick={() => setActiveView("dashboard")}
-          >
-            Dashboard
-          </button>
-
-          <button
-            className={activeView === "analyze" ? "app-nav-link active" : "app-nav-link"}
-            onClick={() => setActiveView("analyze")}
-          >
-            Analyze Document
-          </button>
-
-          <button
-            className={activeView === "ask" ? "app-nav-link active" : "app-nav-link"}
-            onClick={() => setActiveView("ask")}
-          >
-            Ask LegalMind
-          </button>
-
-          <button
-            className={activeView === "documents" ? "app-nav-link active" : "app-nav-link"}
-            onClick={() => setActiveView("documents")}
-          >
-            My Documents
-          </button>
-
-          <button
-            className={activeView === "reviews" ? "app-nav-link active" : "app-nav-link"}
-            onClick={() => setActiveView("reviews")}
-          >
-            Reviews
-          </button>
-
-          <button
-            className={activeView === "reports" ? "app-nav-link active" : "app-nav-link"}
-            onClick={() => setActiveView("reports")}
-          >
-            Reports
-          </button>
+          {["dashboard", "analyze", "ask", "documents", "reviews", "reports"].map((view) => (
+            <button
+              key={view}
+              className={activeView === view ? "app-nav-link active" : "app-nav-link"}
+              onClick={() => setActiveView(view)}
+            >
+              {view.charAt(0).toUpperCase() + view.slice(1)}
+            </button>
+          ))}
         </div>
 
         <button
@@ -320,37 +288,47 @@ export default function Home() {
           {uiLanguage === "en" ? "اردو" : "English"}
         </button>
       </nav>
-{activeView === "reviews" && (
-  <section className="application-home">
-    <div className="query-header">
-      <div>
-        <div className="eyebrow">HUMAN REVIEW</div>
-        <h1>Reviews</h1>
-        <p>Review completed LegalMind analyses.</p>
-      </div>
-    </div>
 
-    <div className="query-card">
-      <h2>Current Review</h2>
-      <p>Contract #{reasoning.contract_id ?? 1} · Clause #{reasoning.clause_id ?? 17}</p>
-      <p>Risk: {riskLevel} · Score: {riskScore}</p>
+      {/* REVIEWS VIEW */}
+      {activeView === "reviews" && (
+        <section className="application-home">
+          <div className="query-header">
+            <div>
+              <div className="eyebrow">HUMAN REVIEW</div>
+              <h1>Reviews</h1>
+              <p>Review completed LegalMind analyses.</p>
+            </div>
+          </div>
 
-      <textarea
-        className="rationale"
-        value={rationale}
-        onChange={(e) => setRationale(e.target.value)}
-        placeholder="Enter reviewer rationale..."
-        rows={4}
-      />
+          <div className="query-card">
+            <h2>Current Review</h2>
+            <p>Contract #{reasoning.contract_id ?? 1} · Clause #{reasoning.clause_id ?? 17}</p>
+            <p>Risk: {riskLevel} · Score: {riskScore}</p>
 
-      <div className="action-buttons">
-        <button className="approve" onClick={() => submitAction("approve")}>Approve</button>
-        <button className="edit" onClick={() => submitAction("edit")}>Edit</button>
-        <button className="reject" onClick={() => submitAction("reject")}>Reject</button>
-      </div>
-    </div>
-  </section>
-)}
+            <textarea
+              className="rationale"
+              value={rationale}
+              onChange={(e) => setRationale(e.target.value)}
+              placeholder="Enter reviewer rationale..."
+              rows={4}
+            />
+
+            <div className="action-buttons">
+              <button className="approve" disabled={actionLoading} onClick={() => submitAction("approve")}>
+                Approve
+              </button>
+              <button className="edit" disabled={actionLoading} onClick={() => submitAction("edit")}>
+                Edit
+              </button>
+              <button className="reject" disabled={actionLoading} onClick={() => submitAction("reject")}>
+                Reject
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* DASHBOARD VIEW */}
       {activeView === "dashboard" && (
         <section className="application-home">
           <div className="hero-section">
@@ -365,10 +343,7 @@ export default function Home() {
           </div>
 
           <div className="home-actions">
-            <button
-              className="home-action-card"
-              onClick={() => setActiveView("analyze")}
-            >
+            <button className="home-action-card" onClick={() => setActiveView("analyze")}>
               <div className="home-action-icon">📄</div>
               <h2>Analyze a Document</h2>
               <p>
@@ -378,15 +353,11 @@ export default function Home() {
               <span>Start analysis →</span>
             </button>
 
-            <button
-              className="home-action-card"
-              onClick={() => setActiveView("ask")}
-            >
+            <button className="home-action-card" onClick={() => setActiveView("ask")}>
               <div className="home-action-icon">⚖️</div>
               <h2>Ask LegalMind</h2>
               <p>
-                Ask questions about supported Pakistani laws without uploading
-                a document.
+                Ask questions about supported Pakistani laws without uploading a document.
               </p>
               <span>Ask a legal question →</span>
             </button>
@@ -413,15 +384,14 @@ export default function Home() {
         </section>
       )}
 
+      {/* DOCUMENTS VIEW */}
       {activeView === "documents" && (
         <section className="application-home">
           <div className="query-header">
             <div>
               <div className="eyebrow">DOCUMENT LIBRARY</div>
               <h1>My Documents</h1>
-              <p>
-                View documents processed by LegalMind and return to their analysis.
-              </p>
+              <p>View documents processed by LegalMind and return to their analysis.</p>
             </div>
           </div>
 
@@ -432,10 +402,7 @@ export default function Home() {
                 <p>Documents currently available in the LegalMind workspace.</p>
               </div>
 
-              <button
-                className="primary-button"
-                onClick={() => setActiveView("analyze")}
-              >
+              <button className="primary-button" onClick={() => setActiveView("analyze")}>
                 Analyze New Document
               </button>
             </div>
@@ -447,10 +414,7 @@ export default function Home() {
                   <span>Application runtime result</span>
                 </div>
 
-                <button
-                  className="secondary-button"
-                  onClick={() => setActiveView("reviews")}
-                >
+                <button className="secondary-button" onClick={() => setActiveView("reviews")}>
                   Open Review
                 </button>
               </div>
@@ -458,15 +422,10 @@ export default function Home() {
               <div className="document-item">
                 <div>
                   <strong>Application Runtime Document</strong>
-                  <span>
-                    41 clauses · 46 risk findings · workflow completed
-                  </span>
+                  <span>41 clauses · 46 risk findings · workflow completed</span>
                 </div>
 
-                <button
-                  className="secondary-button"
-                  onClick={() => setActiveView("reports")}
-                >
+                <button className="secondary-button" onClick={() => setActiveView("reports")}>
                   View Report
                 </button>
               </div>
@@ -475,15 +434,14 @@ export default function Home() {
         </section>
       )}
 
+      {/* REPORTS VIEW */}
       {activeView === "reports" && (
         <section className="application-home">
           <div className="query-header">
             <div>
               <div className="eyebrow">REPORTS</div>
               <h1>Legal Reports</h1>
-              <p>
-                Access completed LegalMind analysis reports and supporting results.
-              </p>
+              <p>Access completed LegalMind analysis reports and supporting results.</p>
             </div>
           </div>
 
@@ -492,8 +450,8 @@ export default function Home() {
               <div>
                 <h2>Application Runtime Report</h2>
                 <p>
-                  Completed analysis containing clause findings, risks,
-                  research, recommendations, and the required legal disclaimer.
+                  Completed analysis containing clause findings, risks, research, recommendations,
+                  and the required legal disclaimer.
                 </p>
               </div>
 
@@ -512,17 +470,14 @@ export default function Home() {
                 <strong>41</strong>
                 <span>Clauses analyzed</span>
               </div>
-
               <div>
                 <strong>46</strong>
                 <span>Risk findings</span>
               </div>
-
               <div>
                 <strong>41</strong>
                 <span>Research results</span>
               </div>
-
               <div>
                 <strong>COMPLETED</strong>
                 <span>Workflow status</span>
@@ -532,6 +487,7 @@ export default function Home() {
         </section>
       )}
 
+      {/* ASK VIEW */}
       {activeView === "ask" && (
         <section className="legal-query-section">
           <div className="query-header">
@@ -539,8 +495,7 @@ export default function Home() {
               <div className="eyebrow">LEGAL KNOWLEDGE</div>
               <h1>Ask LegalMind</h1>
               <p>
-                Ask a question about supported Pakistani commercial and contract
-                law. No document is required.
+                Ask a question about supported Pakistani commercial and contract law. No document is required.
               </p>
             </div>
           </div>
@@ -588,9 +543,7 @@ export default function Home() {
             <div className="query-result">
               <div className="result-header">
                 <strong>
-                  {queryResult.status === "ERROR"
-                    ? "Unable to answer"
-                    : "LegalMind Response"}
+                  {queryResult.status === "ERROR" ? "Unable to answer" : "LegalMind Response"}
                 </strong>
               </div>
 
@@ -609,9 +562,7 @@ export default function Home() {
                             <strong>
                               {item.title || item.heading || item.statute_id || "Legal source"}
                             </strong>
-                            <span>
-                              {item.section_id ? `Section ${item.section_id}` : ""}
-                            </span>
+                            <span>{item.section_id ? `Section ${item.section_id}` : ""}</span>
                             <p>{item.text || ""}</p>
                           </div>
                         ))}
@@ -619,9 +570,8 @@ export default function Home() {
                     )}
 
                     <div className="legal-disclaimer">
-                      LegalMind provides legal intelligence and research support,
-                      not legal advice. Verify important matters with a qualified
-                      legal professional.
+                      LegalMind provides legal intelligence and research support, not legal advice.
+                      Verify important matters with a qualified legal professional.
                     </div>
                   </>
                 )}
@@ -631,371 +581,339 @@ export default function Home() {
         </section>
       )}
 
+      {/* ANALYZE VIEW */}
       {activeView === "analyze" && (
         <>
-      <header className="topbar">
-        <div>
-          <div className="eyebrow">LEGALMIND</div>
-          <h1>Reviewer Dashboard</h1>
-          <p>Phase 3 Human-in-the-Loop Review</p>
-        </div>
-
-        <div className={`status-badge ${result?.status === "PAUSED" ? "paused" : ""}`}>
-          <span className="status-dot" />
-          {result?.status || "UNKNOWN"}
-        </div>
-      </header>
-
-      {error && <div className="error-banner">{error}</div>}
-
-      <section className="document-upload">
-        <div>
-          <span className="section-label">DOCUMENT ANALYSIS</span>
-          <h2>Analyze New Document</h2>
-        </div>
-
-        <div className="document-upload-controls">
-          <input
-            type="file"
-            accept=".pdf,.docx,.jpg,.jpeg,.png"
-            disabled={processing}
-            onChange={(event) =>
-              setSelectedFile(event.target.files?.[0] || null)
-            }
-          />
-
-          <button
-            type="button"
-            disabled={!selectedFile || processing}
-            onClick={processSelectedFile}
-          >
-            {processing ? "Processing..." : "Analyze Document"}
-          </button>
-        </div>
-
-        {selectedFile && (
-          <p className="muted">
-            Selected: {selectedFile.name}
-          </p>
-        )}
-
-        {processingMessage && (
-          <p className="muted">{processingMessage}</p>
-        )}
-      </section>
-
-      <section className="summary-grid">
-        <div className="summary-card">
-          <span>Contract</span>
-          <strong>#{reasoning.contract_id ?? 1}</strong>
-        </div>
-
-        <div className="summary-card">
-          <span>Clause</span>
-          <strong>#{reasoning.clause_id ?? 17}</strong>
-        </div>
-
-        <div className="summary-card">
-          <span>Risk Score</span>
-          <strong>{riskScore}</strong>
-        </div>
-
-        <div className="summary-card">
-          <span>Confidence</span>
-          <strong>{(confidence * 100).toFixed(2)}%</strong>
-        </div>
-
-        <div className="summary-card">
-          <span>HITL</span>
-          <strong>{result?.hitl?.status || "CONTINUE"}</strong>
-        </div>
-      </section>
-
-      <section className="content-grid">
-        <div className="main-column">
-
-          <article className="panel">
-            <div className="panel-header">
-              <div>
-                <span className="section-label">CLAUSE REVIEW</span>
-                <h2>{reasoning.clause_heading || "Trade Secrets and Source Code."}</h2>
-              </div>
-              <span className="pill">Clause {reasoning.clause_id ?? 17}</span>
+          <header className="topbar">
+            <div>
+              <div className="eyebrow">LEGALMIND</div>
+              <h1>Reviewer Dashboard</h1>
+              <p>Phase 3 Human-in-the-Loop Review</p>
             </div>
 
-            <div className="clause-box">
-              {reasoning.clause_text || "Clause text is unavailable in the current runtime snapshot."}
-            </div>
-          </article>
-
-          <article className="panel">
-            <div className="panel-header">
-              <div>
-                <span className="section-label">RISK HEATMAP</span>
-                <h2>Contract Risk Overview</h2>
-              </div>
-              <span className="pill neutral">Score {riskScore}</span>
-            </div>
-
-            <div className="risk-heatmap">
-              {Object.entries(riskCounts).map(([label, count]) => (
-                <div className={`risk-cell risk-active-${label.toLowerCase()}`} key={label}>
-                  <span className={`risk-indicator risk-${label.toLowerCase()}`} />
-                  <div>
-                    <strong>{label}</strong>
-                    <span>{count} finding</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="risk-scale">
-              <span>0–1 Low</span>
-              <span>2 Medium</span>
-              <span>3 High</span>
-              <span>&gt;3 HITL</span>
-            </div>
-          </article>
-
-          <article className="panel">
-            <div className="panel-header">
-              <div>
-                <span className="section-label">LEGAL REASONING</span>
-                <h2>Assessment</h2>
-              </div>
-              <span className="pill neutral">
-                {reasoning.reasoning_status || "Draft"}
-              </span>
-            </div>
-
-            <p className="assessment">
-              {reasoning.legal_assessment || "No legal assessment available."}
-            </p>
-
-            {(reasoning.negotiation_recommendations || []).map((item, index) => (
-              <div className="recommendation" key={index}>
-                <strong>Negotiation recommendation</strong>
-                <p>{item}</p>
-              </div>
-            ))}
-          </article>
-
-          <article className="panel">
-            <div className="panel-header">
-              <div>
-                <span className="section-label">CASE-LAW EVIDENCE</span>
-                <h2>Retrieved Authorities</h2>
-              </div>
-              <span className="pill">{evidence.length} records</span>
-            </div>
-
-            <div className="evidence-list">
-              {evidence.map((item, index) => (
-                <div className="evidence-row" key={`${item.title}-${index}`}>
-                  <div className="evidence-number">{index + 1}</div>
-                  <div className="evidence-content">
-                    <strong>{item.title}</strong>
-                    <span>{item.jurisdiction} · {item.source || "CourtListener"}</span>
-                  </div>
-                  <span className="verified">Verified</span>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="panel">
-            <div className="panel-header">
-              <div>
-                <span className="section-label">REDLINE REVIEW</span>
-                <h2>Side-by-Side Contract Diff</h2>
-              </div>
-              <span className="pill neutral">
-                {riskScore >= 4 ? "HITL Review" : "Review"}
-              </span>
-            </div>
-
-            <div className="redline-grid">
-              <div>
-                <span className="diff-label">ORIGINAL</span>
-                <div className="diff-box original">
-                  {originalText}
-                </div>
-              </div>
-
-              <div>
-                <span className="diff-label">PROPOSED / REDLINE</span>
-                <div className="diff-box proposed">
-                  {proposedText}
-                </div>
-              </div>
-            </div>
-          </article>
-
-        </div>
-
-        <aside className="side-column">
-
-          <article className="panel">
-            <span className="section-label">EXPLAINABILITY</span>
-            <h2>Confidence</h2>
-
-            <div className="confidence-score">
-              {(confidence * 100).toFixed(2)}%
-            </div>
-
-            <div className="confidence-bar">
-              <div style={{ width: `${confidence * 100}%` }} />
-            </div>
-
-            <div className="metric">
-              <span>Retrieval similarity</span>
-              <strong>{explainability.confidence?.retrieval_similarity ?? 0}</strong>
-            </div>
-
-            <div className="metric">
-              <span>Critic score</span>
-              <strong>{explainability.confidence?.critic_score ?? 0}</strong>
-            </div>
-
-            <div className="metric">
-              <span>Self-consistency</span>
-              <strong>
-                {explainability.confidence?.self_consistency?.n ?? 3} / 3
-              </strong>
-            </div>
-          </article>
-
-          <article className="panel">
-            <span className="section-label">EVIDENCE GRAPH</span>
-            <h2>Knowledge Graph</h2>
-
-            <div className="graph-summary">
-              <div>
-                <strong>{nodes.length}</strong>
-                <span>Nodes</span>
-              </div>
-              <div>
-                <strong>{edges.length}</strong>
-                <span>Edges</span>
-              </div>
-            </div>
-
-            <p className="muted">
-              Evidence graph rendered from the Neo4j-backed Phase 3 result.
-            </p>
-          </article>
-
-          <article className="panel">
-            <span className="section-label">CRITIC</span>
-            <h2>Validation</h2>
-
-            <div className="check">
-              <span>✓</span>
-              Citation verification {critic.citation_check?.passed ? "passed" : "pending"}
-            </div>
-
-            <div className="check">
-              <span>✓</span>
-              Logical consistency {critic.consistency_check?.passed ? "passed" : "pending"}
-            </div>
-
-            <div className="check">
-              <span>✓</span>
-              Revision loop {critic.status === "PASS" ? "passed" : "pending"}
-            </div>
-
-            <div className="critic-meta">
-              {critic.evidence_boundary?.retrieved_case_count ?? 0} retrieved evidence records
-            </div>
-          </article>
-
-          <article className={`panel hitl-panel ${result?.hitl_required ? "hitl-required" : ""}`}>
-            <span className="section-label">HITL REVIEW</span>
-            <h2>Decision</h2>
-
-            <div className="hitl-status">
+            <div className={`status-badge ${result?.status === "PAUSED" ? "paused" : ""}`}>
               <span className="status-dot" />
-              {result?.hitl?.status || action}
+              {result?.status || "UNKNOWN"}
+            </div>
+          </header>
+
+          {error && <div className="error-banner">{error}</div>}
+
+          <section className="document-upload">
+            <div>
+              <span className="section-label">DOCUMENT ANALYSIS</span>
+              <h2>Analyze New Document</h2>
             </div>
 
-            <p className="hitl-reason">
-              {result?.hitl?.reason || "Workflow is within the configured review threshold."}
-            </p>
-
-            <label className="rationale-label">Reviewer rationale</label>
-
-            <textarea
-              className="rationale"
-              value={rationale}
-              onChange={(event) => setRationale(event.target.value)}
-              placeholder="Enter rationale for this decision..."
-              rows={4}
-            />
-
-            <div className="action-buttons">
-              <button
-                className="approve"
-                disabled={actionLoading}
-                onClick={() => submitAction("approve")}
-              >
-                Approve
-              </button>
+            <div className="document-upload-controls">
+              <input
+                type="file"
+                accept=".pdf,.docx,.jpg,.jpeg,.png"
+                disabled={processing}
+                onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+              />
 
               <button
-                className="edit"
-                disabled={actionLoading}
-                onClick={() =>
-                  submitAction("edit", {
-                    review_status: "edited",
-                    review_note: "Edited through LegalMind reviewer dashboard."
-                  })
-                }
+                type="button"
+                disabled={!selectedFile || processing}
+                onClick={processSelectedFile}
               >
-                Edit
-              </button>
-
-              <button
-                className="reject"
-                disabled={actionLoading}
-                onClick={() => submitAction("reject")}
-              >
-                Reject
+                {processing ? "Processing..." : "Analyze Document"}
               </button>
             </div>
-          </article>
 
-          <article className="panel">
-            <div className="panel-header">
-              <div>
-                <span className="section-label">AUDIT LOG</span>
-                <h2>Immutable Reviewer Activity</h2>
-              </div>
-              <span className="pill">{audit.length} entries</span>
+            {selectedFile && <p className="muted">Selected: {selectedFile.name}</p>}
+            {processingMessage && <p className="muted">{processingMessage}</p>}
+          </section>
+
+          <section className="summary-grid">
+            <div className="summary-card">
+              <span>Contract</span>
+              <strong>#{reasoning.contract_id ?? 1}</strong>
             </div>
 
-            {audit.length === 0 ? (
-              <p className="muted">No reviewer actions recorded.</p>
-            ) : (
-              <div className="audit-history">
-                {audit.map((entry) => (
-                  <div className="audit-entry" key={entry.audit_id}>
-                    <strong>{entry.action}</strong>
-                    <span>
-                      {entry.reviewer_id} ·{" "}
-                      {new Date(entry.timestamp).toLocaleString()}
-                    </span>
-                    <p>{entry.rationale}</p>
+            <div className="summary-card">
+              <span>Clause</span>
+              <strong>#{reasoning.clause_id ?? 17}</strong>
+            </div>
+
+            <div className="summary-card">
+              <span>Risk Score</span>
+              <strong>{riskScore}</strong>
+            </div>
+
+            <div className="summary-card">
+              <span>Confidence</span>
+              <strong>{(confidence * 100).toFixed(2)}%</strong>
+            </div>
+
+            <div className="summary-card">
+              <span>HITL</span>
+              <strong>{result?.hitl?.status || "CONTINUE"}</strong>
+            </div>
+          </section>
+
+          <section className="content-grid">
+            <div className="main-column">
+              <article className="panel">
+                <div className="panel-header">
+                  <div>
+                    <span className="section-label">CLAUSE REVIEW</span>
+                    <h2>{reasoning.clause_heading || "Trade Secrets and Source Code."}</h2>
+                  </div>
+                  <span className="pill">Clause {reasoning.clause_id ?? 17}</span>
+                </div>
+
+                <div className="clause-box">
+                  {reasoning.clause_text || "Clause text is unavailable in the current runtime snapshot."}
+                </div>
+              </article>
+
+              <article className="panel">
+                <div className="panel-header">
+                  <div>
+                    <span className="section-label">RISK HEATMAP</span>
+                    <h2>Contract Risk Overview</h2>
+                  </div>
+                  <span className="pill neutral">Score {riskScore}</span>
+                </div>
+
+                <div className="risk-heatmap">
+                  {Object.entries(riskCounts).map(([label, count]) => (
+                    <div className={`risk-cell risk-active-${label.toLowerCase()}`} key={label}>
+                      <span className={`risk-indicator risk-${label.toLowerCase()}`} />
+                      <div>
+                        <strong>{label}</strong>
+                        <span>{count} finding</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="risk-scale">
+                  <span>0–1 Low</span>
+                  <span>2 Medium</span>
+                  <span>3 High</span>
+                  <span>&gt;3 HITL</span>
+                </div>
+              </article>
+
+              <article className="panel">
+                <div className="panel-header">
+                  <div>
+                    <span className="section-label">LEGAL REASONING</span>
+                    <h2>Assessment</h2>
+                  </div>
+                  <span className="pill neutral">{reasoning.reasoning_status || "Draft"}</span>
+                </div>
+
+                <p className="assessment">
+                  {reasoning.legal_assessment || "No legal assessment available."}
+                </p>
+
+                {(reasoning.negotiation_recommendations || []).map((item, index) => (
+                  <div className="recommendation" key={index}>
+                    <strong>Negotiation recommendation</strong>
+                    <p>{item}</p>
                   </div>
                 ))}
-              </div>
-            )}
-          </article>
+              </article>
 
-        </aside>
-      </section>
+              <article className="panel">
+                <div className="panel-header">
+                  <div>
+                    <span className="section-label">CASE-LAW EVIDENCE</span>
+                    <h2>Retrieved Authorities</h2>
+                  </div>
+                  <span className="pill">{evidence.length} records</span>
+                </div>
+
+                <div className="evidence-list">
+                  {evidence.map((item, index) => (
+                    <div className="evidence-row" key={`${item.title}-${index}`}>
+                      <div className="evidence-number">{index + 1}</div>
+                      <div className="evidence-content">
+                        <strong>{item.title}</strong>
+                        <span>{item.jurisdiction} · {item.source || "CourtListener"}</span>
+                      </div>
+                      <span className="verified">Verified</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+
+              <article className="panel">
+                <div className="panel-header">
+                  <div>
+                    <span className="section-label">REDLINE REVIEW</span>
+                    <h2>Side-by-Side Contract Diff</h2>
+                  </div>
+                  <span className="pill neutral">
+                    {riskScore >= 4 ? "HITL Review" : "Review"}
+                  </span>
+                </div>
+
+                <div className="redline-grid">
+                  <div>
+                    <span className="diff-label">ORIGINAL</span>
+                    <div className="diff-box original">{originalText}</div>
+                  </div>
+
+                  <div>
+                    <span className="diff-label">PROPOSED / REDLINE</span>
+                    <div className="diff-box proposed">{proposedText}</div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <aside className="side-column">
+              <article className="panel">
+                <span className="section-label">EXPLAINABILITY</span>
+                <h2>Confidence</h2>
+
+                <div className="confidence-score">{(confidence * 100).toFixed(2)}%</div>
+
+                <div className="confidence-bar">
+                  <div style={{ width: `${confidence * 100}%` }} />
+                </div>
+
+                <div className="metric">
+                  <span>Retrieval similarity</span>
+                  <strong>{explainability.confidence?.retrieval_similarity ?? 0}</strong>
+                </div>
+
+                <div className="metric">
+                  <span>Critic score</span>
+                  <strong>{explainability.confidence?.critic_score ?? 0}</strong>
+                </div>
+
+                <div className="metric">
+                  <span>Self-consistency</span>
+                  <strong>{explainability.confidence?.self_consistency?.n ?? 3} / 3</strong>
+                </div>
+              </article>
+
+              <article className="panel">
+                <span className="section-label">EVIDENCE GRAPH</span>
+                <h2>Knowledge Graph</h2>
+
+                <div className="graph-summary">
+                  <div>
+                    <strong>{nodes.length}</strong>
+                    <span>Nodes</span>
+                  </div>
+                  <div>
+                    <strong>{edges.length}</strong>
+                    <span>Edges</span>
+                  </div>
+                </div>
+
+                <p className="muted">
+                  Evidence graph rendered from the Neo4j-backed Phase 3 result.
+                </p>
+              </article>
+
+              <article className="panel">
+                <span className="section-label">CRITIC</span>
+                <h2>Validation</h2>
+
+                <div className="check">
+                  <span>✓</span>
+                  Citation verification {critic.citation_check?.passed ? "passed" : "pending"}
+                </div>
+
+                <div className="check">
+                  <span>✓</span>
+                  Logical consistency {critic.consistency_check?.passed ? "passed" : "pending"}
+                </div>
+
+                <div className="check">
+                  <span>✓</span>
+                  Revision loop {critic.status === "PASS" ? "passed" : "pending"}
+                </div>
+
+                <div className="critic-meta">
+                  {critic.evidence_boundary?.retrieved_case_count ?? 0} retrieved evidence records
+                </div>
+              </article>
+
+              <article className={`panel hitl-panel ${result?.hitl_required ? "hitl-required" : ""}`}>
+                <span className="section-label">HITL REVIEW</span>
+                <h2>Decision</h2>
+
+                <div className="hitl-status">
+                  <span className="status-dot" />
+                  {result?.hitl?.status || action}
+                </div>
+
+                <p className="hitl-reason">
+                  {result?.hitl?.reason || "Workflow is within the configured review threshold."}
+                </p>
+
+                <label className="rationale-label">Reviewer rationale</label>
+
+                <textarea
+                  className="rationale"
+                  value={rationale}
+                  onChange={(event) => setRationale(event.target.value)}
+                  placeholder="Enter rationale for this decision..."
+                  rows={4}
+                />
+
+                <div className="action-buttons">
+                  <button className="approve" disabled={actionLoading} onClick={() => submitAction("approve")}>
+                    Approve
+                  </button>
+
+                  <button
+                    className="edit"
+                    disabled={actionLoading}
+                    onClick={() =>
+                      submitAction("edit", {
+                        review_status: "edited",
+                        review_note: "Edited through LegalMind reviewer dashboard."
+                      })
+                    }
+                  >
+                    Edit
+                  </button>
+
+                  <button className="reject" disabled={actionLoading} onClick={() => submitAction("reject")}>
+                    Reject
+                  </button>
+                </div>
+              </article>
+
+              <article className="panel">
+                <div className="panel-header">
+                  <div>
+                    <span className="section-label">AUDIT LOG</span>
+                    <h2>Immutable Reviewer Activity</h2>
+                  </div>
+                  <span className="pill">{audit.length} entries</span>
+                </div>
+
+                {audit.length === 0 ? (
+                  <p className="muted">No reviewer actions recorded.</p>
+                ) : (
+                  <div className="audit-history">
+                    {audit.map((entry) => (
+                      <div className="audit-entry" key={entry.audit_id}>
+                        <strong>{entry.action}</strong>
+                        <span>
+                          {entry.reviewer_id} · {new Date(entry.timestamp).toLocaleString()}
+                        </span>
+                        <p>{entry.rationale}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            </aside>
+          </section>
         </>
       )}
-
     </main>
   );
 }
