@@ -1,26 +1,42 @@
 import { NextResponse } from "next/server";
-import { readFile } from "fs/promises";
 
+const BACKEND = process.env.LEGALMIND_BACKEND_URL || "http://127.0.0.1:8000";
+
+// Previously this read a hardcoded Google Colab path
+// ("/content/drive/MyDrive/legalmind/outputs/reports/...") straight off
+// the Next.js server's own filesystem instead of calling the backend -
+// that path never exists on Vercel (or anywhere outside the original
+// Colab notebook), so this route always fell into the catch block and
+// returned "Report file is not available." regardless of whether a
+// report had actually been generated. Every other /api/* route proxies
+// to the FastAPI backend; this one now does the same, streaming the
+// generated .docx through instead of reading local disk.
 export async function GET() {
-  const filePath = "/content/drive/MyDrive/legalmind/outputs/reports/application_runtime.docx";
+  const response = await fetch(`${BACKEND}/api/report`, {
+    cache: "no-store",
+  });
 
-  try {
-    const file = await readFile(filePath);
-
-    return new NextResponse(file, {
-      status: 200,
+  if (!response.ok) {
+    const text = await response.text();
+    return new NextResponse(text, {
+      status: response.status,
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": 'attachment; filename="LegalMind_Application_Runtime_Report.docx"',
+        "Content-Type": response.headers.get("content-type") || "application/json",
       },
     });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        status: "ERROR",
-        message: "Report file is not available.",
-      },
-      { status: 404 }
-    );
   }
+
+  const fileBuffer = await response.arrayBuffer();
+
+  return new NextResponse(fileBuffer, {
+    status: 200,
+    headers: {
+      "Content-Type":
+        response.headers.get("content-type") ||
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "Content-Disposition":
+        response.headers.get("content-disposition") ||
+        'attachment; filename="LegalMind_Legal_Intelligence_Report.docx"',
+    },
+  });
 }

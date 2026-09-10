@@ -60,8 +60,17 @@ class ReportGenerator:
         else:
             document.add_paragraph("No risk findings available.")
 
+        # The live pipeline (app/api/process.py) nests these under
+        # reasoning_critic.{reasoning_result,critic_result} and calls
+        # the explainability key "explainability", not
+        # "explainability_result". Reading only the old flat names
+        # meant every real report showed "No ... available." even
+        # though the data existed one level down. Check both shapes so
+        # this works regardless of which caller produced `state`.
+        reasoning_critic = state.get("reasoning_critic") or {}
+
         document.add_heading("Legal Reasoning", level=1)
-        reasoning = state.get("reasoning_result")
+        reasoning = state.get("reasoning_result") or reasoning_critic.get("reasoning_result")
         document.add_paragraph(
             str(reasoning)
             if reasoning is not None
@@ -69,7 +78,7 @@ class ReportGenerator:
         )
 
         document.add_heading("Critic Review", level=1)
-        critic = state.get("critic_result")
+        critic = state.get("critic_result") or reasoning_critic.get("critic_result")
         document.add_paragraph(
             str(critic)
             if critic is not None
@@ -77,7 +86,7 @@ class ReportGenerator:
         )
 
         document.add_heading("Explainability", level=1)
-        explainability = state.get("explainability_result")
+        explainability = state.get("explainability_result") or state.get("explainability")
         document.add_paragraph(
             str(explainability)
             if explainability is not None
@@ -122,7 +131,7 @@ class ReportGenerator:
         self._add_field(document, "Case-law items", case_count)
 
         document.add_heading("Human Review", level=1)
-        hitl = state.get("hitl_result")
+        hitl = state.get("hitl_result") or state.get("hitl")
         document.add_paragraph(
             str(hitl)
             if hitl is not None
