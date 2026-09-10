@@ -7,7 +7,6 @@ from app.config import get_upload_dir
 from app.extraction.text_extractor import extract_text
 
 router = APIRouter(
-    prefix="/upload",
     tags=["Upload"]
 )
 
@@ -23,7 +22,7 @@ ALLOWED_TYPES = {
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
-@router.post("")
+@router.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
 
     # -----------------------------
