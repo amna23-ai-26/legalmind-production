@@ -1,34 +1,28 @@
-
 import os
 from typing import Optional, List, Dict
 
-from qdrant_client import QdrantClient
-from qdrant_client.models import (
-    VectorParams,
-    Distance,
-    PointStruct
-)
+try:
+    from qdrant_client import QdrantClient
+    from qdrant_client.models import (
+        VectorParams,
+        Distance,
+        PointStruct
+    )
+except ImportError:
+    QdrantClient = None
+    VectorParams = None
+    Distance = None
+    PointStruct = None
 
 
 class QdrantDatabase:
     """
     LegalMind Qdrant vector database interface.
-
-    Supports:
-    - Persistent local Qdrant storage for Colab/prototyping
-    - Qdrant Cloud when QDRANT_URL is configured
-
-    Local persistence is used so vectors survive creation of
-    a new QdrantDatabase instance.
     """
 
     VECTOR_SIZE = 1024
     DEFAULT_COLLECTION = "legalmind_chunks"
-
-    # Persistent local storage
-    DEFAULT_PATH = (
-        "/content/drive/MyDrive/legalmind/data/qdrant_storage"
-    )
+    DEFAULT_PATH = "/content/drive/MyDrive/legalmind/data/qdrant_storage"
 
     def __init__(
         self,
@@ -37,6 +31,9 @@ class QdrantDatabase:
         collection_name: str = DEFAULT_COLLECTION,
         path: Optional[str] = None
     ):
+        if QdrantClient is None:
+            raise ValueError("qdrant-client package is not installed.")
+
         self.url = url or os.getenv("QDRANT_URL")
         self.api_key = api_key or os.getenv("QDRANT_API_KEY")
         self.collection_name = collection_name
@@ -47,32 +44,17 @@ class QdrantDatabase:
                 api_key=self.api_key
             )
             self.mode = "cloud"
-
         else:
             self.path = path or self.DEFAULT_PATH
-
-            os.makedirs(
-                self.path,
-                exist_ok=True
-            )
-
-            self.client = QdrantClient(
-                path=self.path
-            )
-
+            os.makedirs(self.path, exist_ok=True)
+            self.client = QdrantClient(path=self.path)
             self.mode = "persistent_local"
 
         self._ensure_collection()
 
     def _ensure_collection(self):
-        """Create collection if it does not exist."""
-
         collections = self.client.get_collections()
-
-        existing = {
-            collection.name
-            for collection in collections.collections
-        }
+        existing = {c.name for c in collections.collections}
 
         if self.collection_name not in existing:
             self.client.create_collection(
@@ -83,29 +65,13 @@ class QdrantDatabase:
                 )
             )
 
-    def upsert_chunks(
-        self,
-        chunks: List[Dict],
-        embeddings
-    ):
-        """Store hierarchical chunks and their embeddings."""
-
+    def upsert_chunks(self, chunks: List[Dict], embeddings):
         if len(chunks) != len(embeddings):
-            raise ValueError(
-                "Number of chunks must match number of embeddings."
-            )
+            raise ValueError("Number of chunks must match number of embeddings.")
 
         points = []
-
-        for index, (chunk, embedding) in enumerate(
-            zip(chunks, embeddings)
-        ):
-
-            chunk_id = chunk.get(
-                "chunk_id",
-                index + 1
-            )
-
+        for index, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+            chunk_id = chunk.get("chunk_id", index + 1)
             point_id = int(chunk_id)
 
             payload = {
@@ -123,12 +89,6 @@ class QdrantDatabase:
                 else list(embedding)
             )
 
-            if len(vector) != self.VECTOR_SIZE:
-                raise ValueError(
-                    f"Invalid vector dimension: {len(vector)}. "
-                    f"Expected {self.VECTOR_SIZE}."
-                )
-
             points.append(
                 PointStruct(
                     id=point_id,
@@ -145,13 +105,7 @@ class QdrantDatabase:
 
         return len(points)
 
-    def search(
-        self,
-        query_vector,
-        limit=5
-    ):
-        """Semantic search over stored vectors."""
-
+    def search(self, query_vector, limit=5):
         vector = (
             query_vector.tolist()
             if hasattr(query_vector, "tolist")
@@ -166,39 +120,21 @@ class QdrantDatabase:
         )
 
         output = []
-
         for result in results.points:
-
-            item = dict(
-                result.payload or {}
-            )
-
-            item["score"] = float(
-                result.score
-            )
-
+            item = dict(result.payload or {})
+            item["score"] = float(result.score)
             item["point_id"] = result.id
-
             output.append(item)
 
         return output
 
     def count(self):
-        """Return exact number of stored vectors."""
-
         result = self.client.count(
             collection_name=self.collection_name,
             exact=True
         )
-
         return result.count
 
     def collection_exists(self):
-        """Check whether collection exists."""
-
         collections = self.client.get_collections()
-
-        return any(
-            collection.name == self.collection_name
-            for collection in collections.collections
-        )
+        return any(c.name == self.collection_name for c in collections.collections)
