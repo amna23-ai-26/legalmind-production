@@ -1,5 +1,8 @@
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 
-from sentence_transformers import SentenceTransformer
 import numpy as np
 
 
@@ -17,24 +20,19 @@ class BGEEmbedder:
     ):
         self.model_name = model_name
 
-        self.model = SentenceTransformer(
-            model_name
-        )
+        if SentenceTransformer is None:
+            self.model = None
+        else:
+            self.model = SentenceTransformer(
+                model_name
+            )
 
     def embed_texts(
         self,
         texts,
         batch_size=8
     ):
-        """
-        Generate embeddings for a list of texts.
-
-        Returns:
-            numpy.ndarray of shape
-            (number_of_texts, 1024)
-        """
-
-        if not texts:
+        if not texts or self.model is None:
             return np.empty(
                 (0, 1024),
                 dtype=np.float32
@@ -57,15 +55,6 @@ class BGEEmbedder:
         chunks,
         batch_size=8
     ):
-        """
-        Generate embeddings for hierarchical chunks.
-
-        Each chunk must contain a 'text' field.
-
-        Returns:
-            numpy.ndarray
-        """
-
         texts = [
             chunk.get("text", "")
             for chunk in chunks
@@ -82,10 +71,6 @@ def embed_texts(
     model_name="BAAI/bge-m3",
     batch_size=8
 ):
-    """
-    Convenience function for embedding raw text.
-    """
-
     embedder = BGEEmbedder(
         model_name=model_name
     )
@@ -101,11 +86,6 @@ def embed_chunks(
     model_name="BAAI/bge-m3",
     batch_size=8
 ):
-    """
-    Convenience function for embedding
-    hierarchical contract chunks.
-    """
-
     embedder = BGEEmbedder(
         model_name=model_name
     )
