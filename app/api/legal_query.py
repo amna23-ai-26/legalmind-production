@@ -10,8 +10,7 @@ from app.retrieval.hybrid_retriever import HybridRetriever
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/legal-query", tags=["Legal Knowledge"])
-
+router = APIRouter(prefix="/ask", tags=["Legal Knowledge"])
 
 class LegalQueryRequest(BaseModel):
     query: str
