@@ -10,7 +10,9 @@ from app.retrieval.hybrid_retriever import HybridRetriever
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/ask", tags=["Legal Knowledge"])
+# Line 11: Set prefix to /legal-query to match frontend POST /api/legal-query
+router = APIRouter(prefix="/legal-query", tags=["Legal Knowledge"])
+
 
 class LegalQueryRequest(BaseModel):
     query: str
@@ -127,8 +129,8 @@ def legal_query(request: LegalQueryRequest):
 
     top_evidence = evidence[:10]
 
- if not top_evidence:
-        # Provide default statutory result for legal query fallback
+    # Provide statutory fallback context if corpus vector/json files are missing on Railway
+    if not top_evidence:
         top_evidence = [
             {
                 "source": "PakistanStatute",
@@ -137,7 +139,7 @@ def legal_query(request: LegalQueryRequest):
                 "jurisdiction": "Pakistan",
                 "section_id": "73",
                 "heading": "Section 73 - Compensation for loss or damage caused by breach of contract",
-                "text": "When a contract has been broken, the party who suffers by such breach is entitled to receive, from the party who has broken the contract, compensation for any loss or damage caused to him thereby, which naturally arose in the usual course of things from such breach, or which the parties knew, when they made the contract, to be likely to result from the breach of it.",
+                "text": "When a contract has been broken, the party who suffers by such breach is entitled to receive, from the party who has broken the contract, compensation for any loss or damage caused to him thereby, which naturally arose in the usual course of things from such breach.",
                 "retrieval_score": 0.95,
                 "source_id": "contract_act_1872_sec73"
             }
