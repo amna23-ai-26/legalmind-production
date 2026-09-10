@@ -44,15 +44,24 @@ export default function Home() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
 
-  // Wrap loadReview in useCallback so it can safely be added to the useEffect dependency array
+  // Wrap loadReview in useCallback with cache-busting headers and parameters
   const loadReview = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
+      const timestamp = Date.now();
+      const fetchOptions = {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache"
+        }
+      };
+
       const [currentResponse, auditResponse] = await Promise.all([
-        fetch("/api/review/current", { cache: "no-store" }),
-        fetch("/api/review/audit", { cache: "no-store" })
+        fetch(`/api/review/current?t=${timestamp}`, fetchOptions),
+        fetch(`/api/review/audit?t=${timestamp}`, fetchOptions)
       ]);
 
       if (!currentResponse.ok) {
@@ -71,8 +80,14 @@ export default function Home() {
     }
   }, []);
 
+  // Fetch review state immediately on mount and across all key views including 'dashboard'
   useEffect(() => {
-    if (activeView === "analyze") {
+    if (
+      activeView === "dashboard" ||
+      activeView === "analyze" ||
+      activeView === "reviews" ||
+      activeView === "review"
+    ) {
       loadReview();
     }
   }, [activeView, loadReview]);
