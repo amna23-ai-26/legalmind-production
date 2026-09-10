@@ -69,7 +69,7 @@ def health():
     has_errors = any("ERROR" in str(val) for val in router_status.values())
     return {
         "status": "degraded" if has_errors else "healthy",
-        "routers": router_status
+        "routers": router_status 
     }
 
 
