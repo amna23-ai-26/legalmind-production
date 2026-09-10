@@ -1,6 +1,9 @@
 
 import os
-from neo4j import GraphDatabase
+try:
+    from neo4j import GraphDatabase
+except ImportError:
+    GraphDatabase = None
 
 
 class Neo4jDatabase:
@@ -16,7 +19,12 @@ class Neo4jDatabase:
         uri=None,
         username=None,
         password=None
-    ):
+       ):
+        if GraphDatabase is None:
+            raise ValueError(
+                "neo4j package is not installed."
+            )
+
         self.uri = uri or os.getenv(
             "NEO4J_URI",
             "bolt://127.0.0.1:7687"
