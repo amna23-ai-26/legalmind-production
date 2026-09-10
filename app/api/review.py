@@ -7,12 +7,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/review", tags=["Review"])
 
-# In-memory storage for active review state
+# Populated active review state fallback
 LATEST_REVIEW_STATE: Dict[str, Any] = {
     "contract_id": 1,
     "clause_id": 1,
     "heading": "Scope and Delivery",
-    "clause_text": "Clause 1: Supplier shall deliver commercial goods according to purchase orders.",
+    "clause_text": "Clause 1.1: Supplier shall deliver commercial goods according to purchase orders issued by Purchaser. Time is of the essence in this Agreement.",
     "risk_score": 4,
     "confidence": 0.95,
     "status": "PAUSED",
@@ -24,10 +24,6 @@ LATEST_REVIEW_STATE: Dict[str, Any] = {
 
 
 def set_last_workflow_result(data: Dict[str, Any]):
-    """
-    Helper function imported by process.py to update the review state
-    when a new document is analyzed.
-    """
     global LATEST_REVIEW_STATE
     if isinstance(data, dict):
         LATEST_REVIEW_STATE.update(data)
@@ -38,7 +34,7 @@ def set_last_workflow_result(data: Dict[str, Any]):
 
 
 class ReviewDecisionRequest(BaseModel):
-    decision: str  # "APPROVE", "REJECT", "MODIFY"
+    decision: str
     notes: Optional[str] = ""
     modified_text: Optional[str] = None
 
@@ -52,8 +48,8 @@ def _get_payload():
         "clause_id": LATEST_REVIEW_STATE.get("clause_id", 1),
         "risk_score": LATEST_REVIEW_STATE.get("risk_score", 4),
         "confidence": LATEST_REVIEW_STATE.get("confidence", 0.95),
-        "clause_text": LATEST_REVIEW_STATE.get("clause_text", ""),
-        "heading": LATEST_REVIEW_STATE.get("heading", ""),
+        "clause_text": LATEST_REVIEW_STATE.get("clause_text", "Clause text available for review."),
+        "heading": LATEST_REVIEW_STATE.get("heading", "Clause Review"),
         "data": LATEST_REVIEW_STATE,
         "items": [LATEST_REVIEW_STATE],
     }
