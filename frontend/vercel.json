@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://legalmind-production-production.up.railway.app/api/:path*"
+    }
+  ]
+}
