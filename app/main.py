@@ -12,7 +12,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for frontend deployments (e.g. Vercel, localhost)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
