@@ -5,9 +5,10 @@ from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+# Mount router matching main.py's global /api prefix
 router = APIRouter(prefix="/review", tags=["Review"])
 
-# In-memory session state for Human-in-the-Loop review
+# State dictionary matching the exact schema expected by the frontend UI
 LATEST_REVIEW_STATE: Dict[str, Any] = {
     "status": "PAUSED",
     "hitl_status": "PAUSED",
@@ -16,7 +17,10 @@ LATEST_REVIEW_STATE: Dict[str, Any] = {
     "clause_id": 1,
     "risk_score": 4,
     "confidence": 0.95,
-    "clause_text": "Agreement details under review...",
+    "clause_text": "Clause 1: Scope and Delivery - Agreement details under active human review.",
+    "heading": "Scope and Delivery",
+    "decision": None,
+    "notes": ""
 }
 
 
@@ -28,13 +32,12 @@ class ReviewDecisionRequest(BaseModel):
 
 @router.get("")
 def get_review_state():
-    # Return both top-level and nested structure so Next.js state checks resolve to PAUSED
-    return {
-        "status": "PAUSED",
-        "hitl_status": "PAUSED",
-        "hitl_required": True,
+    # Return the data payload both at top-level and inside 'data' key for UI compatibility
+    response_payload = {
+        **LATEST_REVIEW_STATE,
         "data": LATEST_REVIEW_STATE
     }
+    return response_payload
 
 
 @router.post("")
