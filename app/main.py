@@ -1,5 +1,6 @@
 import os
 import logging
+import traceback
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -20,59 +21,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+router_status = {}
+
+
+def load_router(name, import_fn):
+    try:
+        router = import_fn()
+        app.include_router(router)
+        router_status[name] = "LOADED"
+    except Exception as exc:
+        err_msg = f"ERROR: {exc}\n{traceback.format_exc()}"
+        router_status[name] = err_msg
+        logger.error(f"Failed to load {name} router: {err_msg}")
+
+
+load_router("upload", lambda: __import__("app.api.upload", fromlist=["router"]).router)
+load_router("process", lambda: __import__("app.api.process", fromlist=["router"]).router)
+load_router("review", lambda: __import__("app.api.review", fromlist=["router"]).router)
+load_router("legal_query", lambda: __import__("app.api.legal_query", fromlist=["router"]).router)
+load_router("report", lambda: __import__("app.api.report", fromlist=["router"]).router)
+load_router("graph", lambda: __import__("app.api.graph", fromlist=["router"]).router)
+
 
 @app.get("/")
 def root():
     return {
         "status": "online",
         "message": "LegalMind API is running",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "routers": router_status
     }
 
 
 @app.get("/health")
 def health():
     return {
-        "status": "healthy"
+        "status": "healthy",
+        "routers": router_status
     }
-
-
-# Safely include routers so a failure in any single router does not crash app startup
-try:
-    from app.api.upload import router as upload_router
-    app.include_router(upload_router)
-except Exception as exc:
-    logger.error(f"Failed to load upload router: {exc}")
-
-try:
-    from app.api.process import router as process_router
-    app.include_router(process_router)
-except Exception as exc:
-    logger.error(f"Failed to load process router: {exc}")
-
-try:
-    from app.api.review import router as review_router
-    app.include_router(review_router)
-except Exception as exc:
-    logger.error(f"Failed to load review router: {exc}")
-
-try:
-    from app.api.legal_query import router as legal_query_router
-    app.include_router(legal_query_router)
-except Exception as exc:
-    logger.error(f"Failed to load legal_query router: {exc}")
-
-try:
-    from app.api.report import router as report_router
-    app.include_router(report_router)
-except Exception as exc:
-    logger.error(f"Failed to load report router: {exc}")
-
-try:
-    from app.api.graph import router as graph_router
-    app.include_router(graph_router)
-except Exception as exc:
-    logger.error(f"Failed to load graph router: {exc}")
 
 
 if __name__ == "__main__":
