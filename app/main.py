@@ -12,16 +12,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# FIXED CORS CONFIGURATION FOR VERCEL
+# Explicit allowed origins list
+allowed_origins = [
+    "https://legalmind-production.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.vercel\.app",  # Matches all Vercel dynamic deployment URLs
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Fallback for dynamic preview deployments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
