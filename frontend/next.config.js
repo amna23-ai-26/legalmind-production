@@ -5,7 +5,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://YOUR-RAILWAY-BACKEND-URL.up.railway.app/api/:path*",
+        destination: "https://legalmind-production-production.up.railway.app/api/:path*",
       },
     ];
   },
